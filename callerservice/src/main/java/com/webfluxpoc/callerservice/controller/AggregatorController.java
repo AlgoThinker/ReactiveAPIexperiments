@@ -1,5 +1,7 @@
 package com.webfluxpoc.callerservice.controller;
 
+import com.webfluxpoc.callerservice.service.AggregatorService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,24 +16,13 @@ import java.util.stream.Collectors;
 @RestController
 public class AggregatorController {
 
-    @GetMapping(value = "/client/retrieve", produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
+    @Autowired
+    AggregatorService aggregatorService;
+
+    @GetMapping("/client/retrieve")
     public Mono<Integer> getItems() {
-        Flux<Integer> flux = Flux.merge(fetchIntgersFromService(), fetchIntgersFromService1());
-        Mono<Integer> mono = flux.reduce(0, (a, b) -> a + b);
-        return mono;
+        Flux<Integer> flux = Flux.merge(aggregatorService.fetchIntgersFromService(),
+                aggregatorService.fetchIntgersFromService1());
+        return flux.reduce(0, Integer::sum);
     }
-
-    public Flux<Integer> fetchIntgersFromService() {
-        WebClient webClient = WebClient.create("http://localhost:8080");
-        return webClient.get().uri("/fluxstream").
-                retrieve().bodyToFlux(Integer.class).log("Items in api service");
-    }
-
-    public Flux<Integer> fetchIntgersFromService1() {
-        WebClient webClient1 = WebClient.create("http://localhost:8081");
-        return webClient1.get().uri("/fluxstream1").
-                retrieve().bodyToFlux(Integer.class).log("Items in api service 1");
-    }
-
-
 }
