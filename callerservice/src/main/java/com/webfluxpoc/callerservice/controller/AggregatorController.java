@@ -14,9 +14,7 @@ public class AggregatorController {
 
     @GetMapping(value = "/client/retrieve", produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
     public Flux<Integer> getItems(){
-        return Flux.merge(fetchIntgersFromService(), fetchIntgersFromService1())
-                .parallel()
-                .runOn(Schedulers.elastic()).ordered((a,b)->a-b);
+        return Flux.merge(fetchIntgersFromService(), fetchIntgersFromService1());
     }
 
    public Flux<Integer> fetchIntgersFromService(){
