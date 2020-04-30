@@ -18,7 +18,7 @@ public class ValuesController {
 
 
     @GetMapping(value = "/fluxstream1", produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
-    public Flux<Integer> returnFluxStream(){
-        return Flux.just(5,6,7,8).delayElements(Duration.ofSeconds(1)).log();
+    public Flux<Character> returnFluxStream(){
+        return Flux.just('a','b','c','d').delayElements(Duration.ofSeconds(1)).log();
     }
 }

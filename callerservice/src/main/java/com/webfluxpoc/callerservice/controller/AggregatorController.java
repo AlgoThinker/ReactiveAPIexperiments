@@ -21,8 +21,6 @@ public class AggregatorController {
 
     @GetMapping("/client/retrieve")
     public Mono<Integer> getItems() {
-        Flux<Integer> flux = Flux.merge(aggregatorService.fetchIntgersFromService(),
-                aggregatorService.fetchIntgersFromService1());
-        return flux.reduce(0, Integer::sum);
+        return aggregatorService.fetchSumOfValues();
     }
 }
