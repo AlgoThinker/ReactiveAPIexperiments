@@ -18,13 +18,13 @@ public class AggregatorServiceImpl implements AggregatorService {
     }
 
 
-    private Flux<Integer> fetchIntgersFromService() {
+     Flux<Integer> fetchIntgersFromService() {
         WebClient webClient = WebClient.create("http://localhost:8080");
         return webClient.get().uri("/fluxstream").
                 retrieve().bodyToFlux(Integer.class).log("Items in api service");
     }
 
-    private Flux<Character> fetchCharsFromService1() {
+     Flux<Character> fetchCharsFromService1() {
         WebClient webClient1 = WebClient.create("http://localhost:8081");
         return webClient1.get().uri("/fluxstream1").
                 retrieve().bodyToFlux(Character.class).log("Items in api service 1");
