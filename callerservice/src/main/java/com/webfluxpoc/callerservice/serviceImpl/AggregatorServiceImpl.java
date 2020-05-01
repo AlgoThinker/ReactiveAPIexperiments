@@ -21,5 +21,4 @@ public class AggregatorServiceImpl implements AggregatorService {
                 fluxInt.reduce(0,Integer::sum),Integer::sum);
     }
 
-
 }

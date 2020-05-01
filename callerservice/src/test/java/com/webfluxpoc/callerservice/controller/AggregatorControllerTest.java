@@ -24,9 +24,6 @@ class AggregatorControllerTest {
 
     @Test
     void getItems() {
-        webClient.get().uri("/client/retrieve")
-                .exchange()
-                .expectStatus().isOk()
-                .equals(36);
+
     }
 }

@@ -15,8 +15,6 @@ import reactor.test.StepVerifier;
 //import org.junit.runner.Runwith;
 import static org.mockito.Mockito.*;
 
-
-//@RunWith(MockitoJUnitRunner.Silent.class)
 @SpringBootTest
 @ExtendWith(MockitoExtension.class)
 class AggregatorServiceImplTest {
