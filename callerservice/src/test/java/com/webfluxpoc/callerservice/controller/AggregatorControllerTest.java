@@ -22,8 +22,8 @@ class AggregatorControllerTest {
     @Autowired
     private WebTestClient webClient;
 
-    @Test
-    void getItems() {
-
-    }
+//    @Test
+//    void getItems() {
+//
+//    }
 }
