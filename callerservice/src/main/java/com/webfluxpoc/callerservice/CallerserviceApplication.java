@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -46,13 +47,13 @@ class ReservationRepository{
        return this.connection()
                 .flatMapMany(connection ->
                 Flux.from(connection.createStatement("select * from reservation").execute())
-        .flatMap((Result r)-> r.map((row,rowMetadata)-> new Reservation(
+                .flatMap((Result r)-> r.map((row,rowMetadata)-> new Reservation(
                 row.get("id",Integer.class),
                 row.get("name",String.class)))));
     }
     Flux<Reservation> save(Reservation r){
         Flux<? extends Result> flatMapMany = this.connection()
-                .flatMapMany(connection -> connection.createStatement("insert into reservation(name) values ($1)")
+                .flatMapMany(conn -> conn.createStatement("insert into reservation(name) values ($1)")
                 .bind("$1",r.getName())
                 .add()
                 .execute());
@@ -75,6 +76,11 @@ class Reservation{
 
 @Configuration
 class ConnectionFactoryConfiguration {
+    @Bean
+    DatabaseClient databaseClient(){
+        return DatabaseClient.create(connectionFactory());
+    }
+
     @Bean
     ConnectionFactory connectionFactory() {
         PostgresqlConnectionConfiguration config =
