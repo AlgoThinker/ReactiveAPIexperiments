@@ -1,57 +1,89 @@
 package com.webfluxpoc.callerservice;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
+import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.spi.Connection;
+import io.r2dbc.spi.ConnectionFactory;
+import io.r2dbc.spi.Result;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.annotation.Id;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @SpringBootApplication
 public class CallerserviceApplication {
 
-	private static final Logger log = LoggerFactory.getLogger(CallerserviceApplication.class);
+    public static void main(String[] args) {
+        SpringApplication.run(CallerserviceApplication.class, args);
+    }
 
-	public static void main(String[] args) {
-		SpringApplication.run(CallerserviceApplication.class, args);
-	}
+}
 
-//	@Bean
-//	public CommandLineRunner demo(CustomerRepository repository) {
-//
-//		return (args) -> {
-//			// save a few customers
-//			repository.saveAll(Arrays.asList(new Customer("Jack", "Bauer"),
-//					new Customer("Chloe", "O'Brian"),
-//					new Customer("Kim", "Bauer"),
-//					new Customer("David", "Palmer"),
-//					new Customer("Michelle", "Dessler")))
-//					.blockLast(Duration.ofSeconds(10));
-//
-//			// fetch all customers
-//			log.info("Customers found with findAll():");
-//			log.info("-------------------------------");
-//			repository.findAll().doOnNext(customer -> {
-//				log.info(customer.toString());
-//			}).blockLast(Duration.ofSeconds(10));
-//
-//			log.info("");
-//
-//			// fetch an individual customer by ID
-//			repository.findById(1L).doOnNext(customer -> {
-//				log.info("Customer found with findById(1L):");
-//				log.info("--------------------------------");
-//				log.info(customer.toString());
-//				log.info("");
-//			}).block(Duration.ofSeconds(10));
-//
-//
-//			// fetch customers by last name
-//			log.info("Customer found with findByLastName('Bauer'):");
-//			log.info("--------------------------------------------");
-//			repository.findByLastName("Bauer").doOnNext(bauer -> {
-//				log.info(bauer.toString());
-//			}).blockLast(Duration.ofSeconds(10));
-//			log.info("");
-//		};
-//	}
 
+@Repository
+class ReservationRepository{
+    private final ConnectionFactory connectionFactory;
+
+    ReservationRepository(ConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
+    }
+
+    Mono<Void> deleteById(Integer id){
+        return this.connection()
+                .flatMapMany(c->c.createStatement("delete from reservation where id = $1")
+                .bind("$1",id)
+                .execute()).then();
+    }
+
+    Flux<Reservation> findAll(){
+       return this.connection()
+                .flatMapMany(connection ->
+                Flux.from(connection.createStatement("select * from reservation").execute())
+        .flatMap((Result r)-> r.map((row,rowMetadata)-> new Reservation(
+                row.get("id",Integer.class),
+                row.get("name",String.class)))));
+    }
+    Flux<Reservation> save(Reservation r){
+        Flux<? extends Result> flatMapMany = this.connection()
+                .flatMapMany(connection -> connection.createStatement("insert into reservation(name) values ($1)")
+                .bind("$1",r.getName())
+                .add()
+                .execute());
+        return flatMapMany.switchMap(x->Flux.just(new Reservation(r.getId(),r.getName())));
+    }
+
+    private Mono<Connection> connection(){
+        return Mono.from(this.connectionFactory.create());
+    }
+}
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+class Reservation{
+    @Id
+    private Integer id;
+    private String name;
+}
+
+@Configuration
+class ConnectionFactoryConfiguration {
+    @Bean
+    ConnectionFactory connectionFactory() {
+        PostgresqlConnectionConfiguration config =
+                PostgresqlConnectionConfiguration.builder()
+                        .database("mydatabase")
+                        .password("mydbcon")
+                        .username("postgres")
+                        .host("localhost")
+                        .build();
+        return new PostgresqlConnectionFactory(config);
+    }
 }
