@@ -2,9 +2,7 @@ package com.webfluxpoc.callerservice;
 
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
-import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
-import io.r2dbc.spi.Result;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,10 +11,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.r2dbc.core.DatabaseClient;
-import org.springframework.stereotype.Repository;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration;
+import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 @SpringBootApplication
 public class CallerserviceApplication {
@@ -27,43 +24,43 @@ public class CallerserviceApplication {
 
 }
 
-
-@Repository
-class ReservationRepository{
-    private final ConnectionFactory connectionFactory;
-
-    ReservationRepository(ConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
-    }
-
-    Mono<Void> deleteById(Integer id){
-        return this.connection()
-                .flatMapMany(c->c.createStatement("delete from reservation where id = $1")
-                .bind("$1",id)
-                .execute()).then();
-    }
-
-    Flux<Reservation> findAll(){
-       return this.connection()
-                .flatMapMany(connection ->
-                Flux.from(connection.createStatement("select * from reservation").execute())
-                .flatMap((Result r)-> r.map((row,rowMetadata)-> new Reservation(
-                row.get("id",Integer.class),
-                row.get("name",String.class)))));
-    }
-    Flux<Reservation> save(Reservation r){
-        Flux<? extends Result> flatMapMany = this.connection()
-                .flatMapMany(conn -> conn.createStatement("insert into reservation(name) values ($1)")
-                .bind("$1",r.getName())
-                .add()
-                .execute());
-        return flatMapMany.switchMap(x->Flux.just(new Reservation(r.getId(),r.getName())));
-    }
-
-    private Mono<Connection> connection(){
-        return Mono.from(this.connectionFactory.create());
-    }
-}
+//
+//@Repository
+//class ReservationRepository{
+//    private final ConnectionFactory connectionFactory;
+//
+//    ReservationRepository(ConnectionFactory connectionFactory) {
+//        this.connectionFactory = connectionFactory;
+//    }
+//
+//    Mono<Void> deleteById(Integer id){
+//        return this.connection()
+//                .flatMapMany(c->c.createStatement("delete from reservation where id = $1")
+//                .bind("$1",id)
+//                .execute()).then();
+//    }
+//
+//    Flux<Reservation> findAll(){
+//       return this.connection()
+//                .flatMapMany(connection ->
+//                Flux.from(connection.createStatement("select * from reservation").execute())
+//                .flatMap((Result r)-> r.map((row,rowMetadata)-> new Reservation(
+//                row.get("id",Integer.class),
+//                row.get("name",String.class)))));
+//    }
+//    Flux<Reservation> save(Reservation r){
+//        Flux<? extends Result> flatMapMany = this.connection()
+//                .flatMapMany(conn -> conn.createStatement("insert into reservation(name) values ($1)")
+//                .bind("$1",r.getName())
+//                .add()
+//                .execute());
+//        return flatMapMany.switchMap(x->Flux.just(new Reservation(r.getId(),r.getName())));
+//    }
+//
+//    private Mono<Connection> connection(){
+//        return Mono.from(this.connectionFactory.create());
+//    }
+//}
 
 @Data
 @AllArgsConstructor
@@ -74,12 +71,32 @@ class Reservation{
     private String name;
 }
 
+interface ReservationRepository extends ReactiveCrudRepository<Reservation, Integer>{
+
+}
+
+@Configuration
+@EnableR2dbcRepositories
+class R2dbcConfiguration extends AbstractR2dbcConfiguration {
+
+    private final ConnectionFactory connectionFactory;
+
+    R2dbcConfiguration(ConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
+    }
+
+    @Override
+    public ConnectionFactory connectionFactory() {
+        return this.connectionFactory;
+    }
+}
+
 @Configuration
 class ConnectionFactoryConfiguration {
-    @Bean
-    DatabaseClient databaseClient(){
-        return DatabaseClient.create(connectionFactory());
-    }
+//    @Bean
+//    DatabaseClient databaseClient(){
+//        return DatabaseClient.create(connectionFactory());
+//    }
 
     @Bean
     ConnectionFactory connectionFactory() {
